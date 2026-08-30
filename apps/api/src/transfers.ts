@@ -138,6 +138,41 @@ export async function registerTransferRoutes(
     return { status: "rejected" };
   });
 
+  app.post("/api/transfers/:id/claim", async (request, reply) => {
+    const params = paramsSchema.safeParse(request.params);
+    const body = z.object({ wallet_address: walletAddressSchema }).safeParse(request.body);
+    if (!params.success || !body.success) {
+      return reply.code(400).send({ error: "invalid_request" });
+    }
+
+    const result = await getTransfer(db, params.data.id);
+    if (!result) return reply.code(404).send({ error: "transfer_not_found" });
+    if (
+      !(await authenticateOwner(
+        verifyDynamicToken,
+        getBearerToken(request),
+        result.dynamicUserId,
+        body.data.wallet_address,
+      )) || result.walletAddress.toLowerCase() !== body.data.wallet_address.toLowerCase()
+    ) {
+      return reply.code(401).send({ error: "invalid_dynamic_session" });
+    }
+
+    const [claimed] = await db
+      .update(transferRequests)
+      .set({ status: "approval_in_progress", updatedAt: new Date() })
+      .where(
+        and(
+          eq(transferRequests.id, result.transfer.id),
+          eq(transferRequests.status, "pending_approval"),
+          gt(transferRequests.expiresAt, new Date()),
+        ),
+      )
+      .returning({ id: transferRequests.id });
+    if (!claimed) return reply.code(409).send({ error: "transfer_not_pending" });
+    return { status: "approval_in_progress" };
+  });
+
   app.post("/api/transfers/:id/complete", async (request, reply) => {
     const params = paramsSchema.safeParse(request.params);
     const body = z
@@ -162,10 +197,7 @@ export async function registerTransferRoutes(
     ) {
       return reply.code(401).send({ error: "invalid_dynamic_session" });
     }
-    if (
-      result.transfer.status !== "pending_approval" ||
-      result.transfer.expiresAt <= new Date()
-    ) {
+    if (result.transfer.status !== "approval_in_progress") {
       return reply.code(409).send({ error: "transfer_not_pending" });
     }
 
@@ -199,8 +231,7 @@ export async function registerTransferRoutes(
       .where(
         and(
           eq(transferRequests.id, result.transfer.id),
-          eq(transferRequests.status, "pending_approval"),
-          gt(transferRequests.expiresAt, new Date()),
+          eq(transferRequests.status, "approval_in_progress"),
         ),
       )
       .returning({ id: transferRequests.id });

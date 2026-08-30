@@ -1,8 +1,13 @@
 .git
 .next
+.next-codex
 .turbo
+.pnpm-store
 node_modules
 **/node_modules
+**/.next
+**/.next-codex
+**/.turbo
 **/dist
 .env
 *.log

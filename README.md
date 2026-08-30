@@ -126,6 +126,8 @@ The agent calls `wallet_prepare_transfer` and returns a browser approval URL. Op
 
 Preparing a transfer does not move funds. Only explicit approval in the browser signs and broadcasts it.
 
+Approval links are single-use. The first approval attempt reserves the request before the wallet opens. If signing is cancelled after that point, ask the agent to prepare a new transfer instead of reusing the link.
+
 ### Stop or restart the project
 
 Stop and remove the service containers while preserving PostgreSQL data:

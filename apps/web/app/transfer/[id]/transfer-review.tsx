@@ -106,6 +106,32 @@ export function TransferReview({ transferId }: { transferId: string }) {
     );
   }
 
+  async function claimTransfer() {
+    const token = getAuthToken();
+    if (!token || !wallet) throw new Error("Your wallet session has expired");
+    const response = await fetch(`${apiUrl}/api/transfers/${transferId}/claim`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ wallet_address: wallet.address }),
+    });
+    const result = (await response.json().catch(() => undefined)) as
+      | { error?: string; status?: string }
+      | undefined;
+    if (!response.ok || result?.status !== "approval_in_progress") {
+      throw new Error(
+        result?.error === "transfer_not_pending"
+          ? "This transfer request has already been used"
+          : result?.error ?? "Unable to reserve this transfer request",
+      );
+    }
+    setTransfer((current) =>
+      current ? { ...current, status: "approval_in_progress" } : current,
+    );
+  }
+
   async function approve() {
     if (!transfer || !wallet) return;
     setWorking("signing");
@@ -121,6 +147,7 @@ export function TransferReview({ transferId }: { transferId: string }) {
       if (!isEthereumWallet(wallet)) throw new Error("An EVM wallet is required");
 
       await wallet.switchNetwork(MONAD_TESTNET.id);
+      await claimTransfer();
       const hash = await wallet.sendBalance({
         amount: transfer.amount,
         toAddress: transfer.recipient_address,
@@ -163,7 +190,10 @@ export function TransferReview({ transferId }: { transferId: string }) {
     }
   }
 
-  const terminal = transfer && transfer.status !== "pending_approval";
+  const canRetryVerification =
+    transfer?.status === "approval_in_progress" && Boolean(transactionHash);
+  const terminal =
+    transfer && transfer.status !== "pending_approval" && !canRetryVerification;
   const explorerHash = transfer?.transaction_hash ?? transactionHash;
 
   return (

@@ -16,6 +16,7 @@ export function WalletDashboard() {
   const isLoggedIn = useIsLoggedIn();
   const wallets = useUserWallets();
   const { sdkHasLoaded, setShowAuthFlow } = useDynamicContext();
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [copied, setCopied] = useState(false);
   const [syncError, setSyncError] = useState<string>();
   const wallet = useMemo(
@@ -76,71 +77,97 @@ export function WalletDashboard() {
         {isLoggedIn ? <DynamicWidget variant="dropdown" /> : null}
       </header>
 
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="eyebrow">Developer wallet · Monad testnet</span>
-          <h1>Your agent gets access. You keep control.</h1>
-          <p>
-            Connect once with email and get a dedicated embedded wallet for your
-            coding agent. No seed phrase and no wallet extension required.
-          </p>
-
-          {!sdkHasLoaded ? (
-            <div className="status-row"><span className="pulse" /> Loading secure sign-in…</div>
-          ) : !isLoggedIn ? (
-            <button className="primary-button" onClick={() => setShowAuthFlow(true)}>
-              Continue with email
+      {showDisclaimer ? (
+        <div className="disclaimer-backdrop">
+          <section
+            className="disclaimer-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="disclaimer-title"
+            aria-describedby="disclaimer-copy"
+          >
+            <span className="panel-label">Testnet notice</span>
+            <h2 id="disclaimer-title">Use test funds only.</h2>
+            <p id="disclaimer-copy">
+              Review every transfer before approving. MCP Wallet is
+              experimental and not financial advice.
+            </p>
+            <button
+              className="warning-ack-button"
+              autoFocus
+              onClick={() => setShowDisclaimer(false)}
+            >
+              I understand
             </button>
-          ) : null}
+          </section>
         </div>
+      ) : null}
 
-        <div className="wallet-panel" aria-live="polite">
-          <div className="panel-header">
-            <div>
-              <span className="panel-label">Embedded wallet</span>
-              <h2>{isLoggedIn ? "Your wallet" : "Not connected"}</h2>
-            </div>
-            <span className={isLoggedIn ? "status-pill active" : "status-pill"}>
-              {isLoggedIn ? "Active" : "Waiting"}
-            </span>
+      <section className={isLoggedIn ? "hero hero-wallet" : "hero hero-solo"}>
+        {!isLoggedIn ? (
+          <div className="hero-copy">
+            <h1>Your agent wallet.</h1>
+            <p>You approve every transfer.</p>
+
+            {!sdkHasLoaded ? (
+              <div className="status-row"><span className="pulse" /> Loading secure sign-in…</div>
+            ) : (
+              <button className="primary-button" onClick={() => setShowAuthFlow(true)}>
+                Continue with email
+              </button>
+            )}
           </div>
+        ) : null}
 
-          {isLoggedIn && wallet ? (
-            <>
-              <div className="address-block">
-                <span>Wallet address</span>
-                <code>{wallet.address}</code>
-                <button className="secondary-button" onClick={copyAddress}>
-                  {copied ? "Copied" : "Copy address"}
-                </button>
+        {isLoggedIn ? (
+          <div className="wallet-panel" aria-live="polite">
+            <div className="panel-header">
+              <div>
+                <h2>Your wallet</h2>
               </div>
-              <div className="network-row">
+            </div>
+
+            {wallet ? (
+              <>
+                <div className="address-block">
+                  <span>Wallet address</span>
+                  <div className="address-row">
+                    <code>{wallet.address}</code>
+                    <button
+                      className="icon-button"
+                      aria-label={copied ? "Copied" : "Copy address"}
+                      title={copied ? "Copied" : "Copy address"}
+                      onClick={copyAddress}
+                    >
+                      {copied ? (
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="m5 12 4 4L19 6" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <rect x="8" y="8" width="11" height="11" rx="2" />
+                          <path d="M16 8V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="network-row">
                 <span className="network-dot" />
                 <div>
                   <strong>{MONAD_TESTNET.name}</strong>
-                  <span>Chain ID {MONAD_TESTNET.id}</span>
                 </div>
+                </div>
+                {syncError ? <p className="inline-error">{syncError}</p> : null}
+              </>
+            ) : (
+              <div className="empty-state">
+                <span className="pulse" />
+                <p>Creating your embedded EVM wallet…</p>
               </div>
-              {syncError ? <p className="inline-error">{syncError}</p> : null}
-            </>
-          ) : isLoggedIn ? (
-            <div className="empty-state">
-              <span className="pulse" />
-              <p>Creating your embedded EVM wallet…</p>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="address-placeholder" />
-              <p>Your address will appear here after email verification.</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="steps" aria-label="How it works">
-        <article><span>01</span><h3>Add the MCP</h3><p>Use the local MCP URL in your coding agent.</p></article>
-        <article><span>02</span><h3>Verify your email</h3><p>The agent opens this secure browser flow.</p></article>
-        <article><span>03</span><h3>Get your address</h3><p>Dynamic creates the embedded EVM wallet.</p></article>
+            )}
+          </div>
+        ) : null}
       </section>
     </main>
   );
