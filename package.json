@@ -1,0 +1,19 @@
+{
+  "name": "mcp-wallet",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @mcp-wallet/db db:generate",
+    "db:migrate": "pnpm --filter @mcp-wallet/db db:migrate"
+  },
+  "devDependencies": {
+    "turbo": "2.10.11",
+    "typescript": "7.0.2"
+  }
+}

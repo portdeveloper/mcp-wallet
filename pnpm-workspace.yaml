@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  '@reown/appkit': true
+  bigint-buffer: true
+  bufferutil: true
+  esbuild: true
+  protobufjs: true
+  utf-8-validate: true
