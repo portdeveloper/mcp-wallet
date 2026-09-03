@@ -345,3 +345,7 @@ Use the hosted HTTPS MCP URL for remote/cloud coding agents. Do not expose a loc
 - Transfer requests expire after 10 minutes and require owner authentication.
 - The browser signs through Dynamic; the server never receives wallet key material.
 - Confirmed transfers are checked against their immutable request before being recorded as successful.
+
+## License
+
+MCP Wallet is available under the [MIT License](LICENSE).
